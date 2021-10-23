@@ -1,11 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
-#if NETSTANDARD2_0
-#else
-using IHost = Microsoft.AspNetCore.Hosting.IWebHostEnvironment;
-#endif
-
 
 namespace CompressedStaticFiles
 {

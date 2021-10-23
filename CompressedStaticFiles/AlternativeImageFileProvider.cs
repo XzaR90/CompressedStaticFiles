@@ -1,46 +1,46 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 
 namespace CompressedStaticFiles
 {
     public class AlternativeImageFileProvider : IAlternativeFileProvider
     {
-
-        private static Dictionary<string, string[]> imageFormats =
-            new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+        private static Dictionary<string, string[]> s_imageFormats =
+            new(StringComparer.OrdinalIgnoreCase)
             {
-                { "image/avif", new [] { ".avif" } },
-                { "image/webp", new [] { ".webp" } },
-                { "image/jpeg", new [] { ".jpg", ".jpeg", ".jfif", ".pjpeg", ".pjp" } },
-                { "image/png", new [] { ".png" } },
-                { "image/bmp", new [] { ".bmp" } },
-                { "image/apng", new [] { ".apng" } },
-                { "image/gif", new [] { ".gif" } },
-                { "image/x-icon", new [] { ".ico", ".cur" } },
-                { "image/tiff", new [] { ".tif", ".tiff" } }
+                { "image/avif", new[] { ".avif" } },
+                { "image/webp", new[] { ".webp" } },
+                { "image/jpeg", new[] { ".jpg", ".jpeg", ".jfif", ".pjpeg", ".pjp" } },
+                { "image/png", new[] { ".png" } },
+                { "image/bmp", new[] { ".bmp" } },
+                { "image/apng", new[] { ".apng" } },
+                { "image/gif", new[] { ".gif" } },
+                { "image/x-icon", new[] { ".ico", ".cur" } },
+                { "image/tiff", new[] { ".tif", ".tiff" } }
             };
-        private readonly ILogger logger;
-        private readonly IOptions<CompressedStaticFileOptions> options;
+
+        private readonly ILogger _logger;
+        private readonly IOptions<CompressedStaticFileOptions> _options;
 
         public AlternativeImageFileProvider(ILogger<AlternativeImageFileProvider> logger, IOptions<CompressedStaticFileOptions> options)
         {
-            this.logger = logger;
-            this.options = options;
+            this._logger = logger;
+            this._options = options;
         }
 
         public void Initialize(FileExtensionContentTypeProvider fileExtensionContentTypeProvider)
         {
-            //Ensure that all image mime types are known!
-            foreach (var mimeType in imageFormats.Keys)
+            // Ensure that all image mime types are known!
+            foreach (var mimeType in s_imageFormats.Keys)
             {
-                foreach (var fileExtension in imageFormats[mimeType])
+                foreach (var fileExtension in s_imageFormats[mimeType])
                 {
                     if (!fileExtensionContentTypeProvider.Mappings.ContainsKey(fileExtension))
                     {
@@ -52,39 +52,40 @@ namespace CompressedStaticFiles
 
         private float GetCostRatioForFileExtension(string fileExtension)
         {
-            foreach (var mimeType in imageFormats.Keys)
+            foreach (var mimeType in s_imageFormats.Keys)
             {
-                if (imageFormats[mimeType].Contains(fileExtension))
+                if (s_imageFormats[mimeType].Contains(fileExtension))
                 {
-                    if (options.Value.ImageSubstitutionCostRatio.TryGetValue(mimeType, out var cost))
+                    if (_options.Value.ImageSubstitutionCostRatio.TryGetValue(mimeType, out var cost))
                     {
                         return cost;
                     }
+
                     return 1;
                 }
             }
+
             return 1;
         }
 
-
         private float GetCostRatioForPath(string path)
         {
-            var fileExtension = Path.GetExtension(path);            
+            var fileExtension = Path.GetExtension(path);
             return GetCostRatioForFileExtension(fileExtension);
         }
 
         public IFileAlternative GetAlternative(HttpContext context, IFileProvider fileSystem, IFileInfo originalFile)
         {
-            if (!options.Value.EnableImageSubstitution)
+            if (!_options.Value.EnableImageSubstitution)
             {
                 return null;
             }
 
             var matchingFileExtensions = context.Request.Headers.GetCommaSeparatedValues("Accept")
-                                                        .Where(mimeType => imageFormats.ContainsKey(mimeType))
-                                                        .SelectMany(mimeType => imageFormats[mimeType]);
+                                                        .Where(mimeType => s_imageFormats.ContainsKey(mimeType))
+                                                        .SelectMany(mimeType => s_imageFormats[mimeType]);
 
-            var originalAlternativeImageFile = new AlternativeImageFile(logger, originalFile, originalFile, GetCostRatioForPath(originalFile.PhysicalPath));
+            var originalAlternativeImageFile = new AlternativeImageFile(_logger, originalFile, originalFile, GetCostRatioForPath(originalFile.PhysicalPath));
 
             AlternativeImageFile matchedFile = originalAlternativeImageFile;
             var path = context.Request.Path.ToString();
@@ -92,13 +93,14 @@ namespace CompressedStaticFiles
             {
                 return null;
             }
+
             var withoutExtension = path.Substring(0, path.LastIndexOf('.'));
             foreach (var fileExtension in matchingFileExtensions)
             {
                 var file = fileSystem.GetFileInfo(withoutExtension + fileExtension);
                 if (file.Exists)
                 {
-                    var alternativeFile = new AlternativeImageFile(logger, originalFile, file, GetCostRatioForFileExtension(fileExtension));
+                    var alternativeFile = new AlternativeImageFile(_logger, originalFile, file, GetCostRatioForFileExtension(fileExtension));
                     if (matchedFile.Cost > alternativeFile.Cost)
                     {
                         matchedFile = alternativeFile;

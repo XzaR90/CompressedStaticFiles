@@ -8,9 +8,9 @@ namespace CompressedStaticFiles
         public bool EnableImageSubstitution { get; set; } = true;
 
         /// <summary>
-        /// Used to prioritize image formats that contain higher quality per byte, if only size should be considered remove all entries.
+        /// Gets or sets used to prioritize image formats that contain higher quality per byte, if only size should be considered remove all entries.
         /// </summary>
-        public Dictionary<string, float> ImageSubstitutionCostRatio { get; set; } = new Dictionary<string, float>()
+        public Dictionary<string, float> ImageSubstitutionCostRatio { get; set; } = new()
         {
             { "image/bmp", 2 },
             { "image/tiff", 1 },

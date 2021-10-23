@@ -1,38 +1,32 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Headers;
-using Microsoft.AspNetCore.StaticFiles;
-using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-#if NETSTANDARD2_0
-using IHost = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
-#else
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using IHost = Microsoft.AspNetCore.Hosting.IWebHostEnvironment;
-#endif
-
 
 namespace CompressedStaticFiles
 {
     public class CompressedStaticFileMiddleware
     {
-        private readonly AsyncLocal<IFileAlternative> alternativeFile = new AsyncLocal<IFileAlternative>();
+        private readonly AsyncLocal<IFileAlternative> _alternativeFile = new AsyncLocal<IFileAlternative>();
         private readonly IOptions<StaticFileOptions> _staticFileOptions;
-        private readonly IEnumerable<IAlternativeFileProvider> alternativeFileProviders;
+        private readonly IEnumerable<IAlternativeFileProvider> _alternativeFileProviders;
         private readonly StaticFileMiddleware _base;
         private readonly ILogger logger;
 
         public CompressedStaticFileMiddleware(
             RequestDelegate next,
             IHost hostingEnv,
-            IOptions<StaticFileOptions> staticFileOptions, IOptions<CompressedStaticFileOptions> compressedStaticFileOptions, ILoggerFactory loggerFactory, IEnumerable<IAlternativeFileProvider> alternativeFileProviders)
+            IOptions<StaticFileOptions> staticFileOptions,
+            IOptions<CompressedStaticFileOptions> compressedStaticFileOptions,
+            ILoggerFactory loggerFactory,
+            IEnumerable<IAlternativeFileProvider> alternativeFileProviders)
         {
             if (next == null)
             {
@@ -48,18 +42,24 @@ namespace CompressedStaticFiles
             {
                 throw new ArgumentNullException(nameof(hostingEnv));
             }
-            if (!alternativeFileProviders.Any())
-            {
-                throw new Exception("No IAlternativeFileProviders where found, did you forget to add AddCompressedStaticFiles() in ConfigureServices?");
-            }
+
+            ThrowIfNoAltProviders(alternativeFileProviders);
+
             logger = loggerFactory.CreateLogger<CompressedStaticFileMiddleware>();
 
-
             this._staticFileOptions = staticFileOptions ?? throw new ArgumentNullException(nameof(staticFileOptions));
-            this.alternativeFileProviders = alternativeFileProviders;
+            this._alternativeFileProviders = alternativeFileProviders;
             InitializeStaticFileOptions(hostingEnv, staticFileOptions);
 
             _base = new StaticFileMiddleware(next, hostingEnv, staticFileOptions, loggerFactory);
+        }
+
+        private static void ThrowIfNoAltProviders(IEnumerable<IAlternativeFileProvider> alternativeFileProviders)
+        {
+            if (!alternativeFileProviders.Any())
+            {
+                throw new CompressedStaticFilesException("No IAlternativeFileProviders where found, did you forget to add AddCompressedStaticFiles() in ConfigureServices?");
+            }
         }
 
         private void InitializeStaticFileOptions(IHost hostingEnv, IOptions<StaticFileOptions> staticFileOptions)
@@ -68,24 +68,23 @@ namespace CompressedStaticFiles
             var contentTypeProvider = staticFileOptions.Value.ContentTypeProvider ?? new FileExtensionContentTypeProvider();
             if (contentTypeProvider is FileExtensionContentTypeProvider fileExtensionContentTypeProvider)
             {
-                foreach(var alternativeFileProvider in alternativeFileProviders)
+                foreach (var alternativeFileProvider in _alternativeFileProviders)
                 {
                     alternativeFileProvider.Initialize(fileExtensionContentTypeProvider);
                 }
-                
             }
+
             staticFileOptions.Value.ContentTypeProvider = contentTypeProvider;
 
             var originalPrepareResponse = staticFileOptions.Value.OnPrepareResponse;
             staticFileOptions.Value.OnPrepareResponse = context =>
             {
                 originalPrepareResponse(context);
-                var alternativeFile = this.alternativeFile.Value;
+                var alternativeFile = this._alternativeFile.Value;
                 if (alternativeFile != null)
                 {
                     alternativeFile.Prepare(contentTypeProvider, context);
                 }
-                
             };
         }
 
@@ -95,6 +94,7 @@ namespace CompressedStaticFiles
             {
                 ProcessRequest(context);
             }
+
             return _base.Invoke(context);
         }
 
@@ -108,15 +108,15 @@ namespace CompressedStaticFiles
                 return;
             }
 
-            //Find the smallest file from all our alternative file providers
-            var smallestAlternativeFile = alternativeFileProviders.Select(alternativeFileProvider => alternativeFileProvider.GetAlternative(context, fileSystem, originalFile))
+            // Find the smallest file from all our alternative file providers
+            var smallestAlternativeFile = _alternativeFileProviders.Select(alternativeFileProvider => alternativeFileProvider.GetAlternative(context, fileSystem, originalFile))
                                                                   .Where(af => af != null)
                                                                   .OrderBy(alternativeFile => alternativeFile?.Cost)
                                                                   .FirstOrDefault();
             if (smallestAlternativeFile != null)
             {
                 smallestAlternativeFile.Apply(context);
-                alternativeFile.Value = smallestAlternativeFile;
+                _alternativeFile.Value = smallestAlternativeFile;
             }
         }
     }

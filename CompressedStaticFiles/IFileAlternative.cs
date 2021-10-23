@@ -6,8 +6,9 @@ namespace CompressedStaticFiles
     public interface IFileAlternative
     {
         long Size { get; }
+
         /// <summary>
-        /// Used to give some files a higher priority
+        /// Gets used to give some files a higher priority.
         /// </summary>
         float Cost { get; }
         void Apply(HttpContext context);

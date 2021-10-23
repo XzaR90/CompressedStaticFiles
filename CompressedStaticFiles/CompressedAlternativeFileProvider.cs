@@ -1,19 +1,19 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 
 namespace CompressedStaticFiles
 {
     public class CompressedAlternativeFileProvider : IAlternativeFileProvider
     {
-        public static Dictionary<string, string> CompressionTypes =
-            new Dictionary<string, string>()
+        public static Dictionary<string, string> CompressionTypes { get; } =
+            new()
             {
                 { "gzip", ".gz" },
                 { "br", ".br" }
@@ -35,7 +35,7 @@ namespace CompressedStaticFiles
         }
 
         /// <summary>
-        /// Find the encodings that are supported by the browser and by this middleware
+        /// Find the encodings that are supported by the browser and by this middleware.
         /// </summary>
         private static IEnumerable<string> GetSupportedEncodings(HttpContext context)
         {
@@ -47,9 +47,10 @@ namespace CompressedStaticFiles
         public IFileAlternative GetAlternative(HttpContext context, IFileProvider fileSystem, IFileInfo originalFile)
         {
             if (!options.Value.EnablePrecompressedFiles)
-            { 
+            {
                 return null;
             }
+
             var supportedEncodings = GetSupportedEncodings(context);
             IFileInfo matchedFile = originalFile;
             foreach (var compressionType in supportedEncodings)
@@ -64,10 +65,10 @@ namespace CompressedStaticFiles
 
             if (matchedFile != originalFile)
             {
-                // a compressed version exists and is smaller, change the path to serve the compressed file
-                var matchedPath = context.Request.Path.Value + Path.GetExtension(matchedFile.Name);
-                return new CompressedAlternativeFile(logger, originalFile, matchedFile);                
+                // A compressed version exists and is smaller, change the path to serve the compressed file.
+                return new CompressedAlternativeFile(logger, originalFile, matchedFile);
             }
+
             return null;
         }
     }
