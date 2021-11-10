@@ -1,28 +1,27 @@
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
-using FluentAssertions;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.TestHost;
-using Microsoft.Extensions.FileProviders;
-using NSubstitute;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using FluentAssertions;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.FileProviders;
+using NSubstitute;
 using Xunit;
 
 namespace CompressedStaticFiles.Tests
 {
     public class CompressedStaticFileMiddlewareTests
     {
-
         /// <summary>
         /// Call the next middleware if no matching file is found.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A task.</returns>
         [Fact]
         public async Task CallNextMiddleware()
         {
@@ -39,7 +38,7 @@ namespace CompressedStaticFiles.Tests
                     {
                         return async context =>
                         {
-                            context.Response.StatusCode = 999;
+                            context.Response.StatusCode = (int)System.Net.HttpStatusCode.NotFound;
                         };
                     });
                 });
@@ -49,13 +48,13 @@ namespace CompressedStaticFiles.Tests
             var response = await server.CreateClient().GetAsync("/this_file_does_not_exist.html");
 
             // Assert
-            response.StatusCode.Should().Be(999);
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.NotFound);
         }
 
         /// <summary>
-        /// Serve the uncompressed file if no compressed version exist
+        /// Serve the uncompressed file if no compressed version exist.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A task.</returns>
         [Fact]
         public async Task Uncompressed()
         {
@@ -85,16 +84,16 @@ namespace CompressedStaticFiles.Tests
             var content = await response.Content.ReadAsStringAsync();
 
             // Assert
-            response.StatusCode.Should().Be(200);
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
             content.Should().Be("uncompressed");
             response.Content.Headers.TryGetValues("Content-Type", out IEnumerable<string> contentTypeValues);
             contentTypeValues.Single().Should().Be("text/html");
         }
 
         /// <summary>
-        /// Serve the compressed file if it exists and the browser supports it testing with a browser that supports both br and gzip
+        /// Serve the compressed file if it exists and the browser supports it testing with a browser that supports both br and gzip.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A task.</returns>
         [Fact]
         public async Task SupportsBrAndGZip()
         {
@@ -126,16 +125,16 @@ namespace CompressedStaticFiles.Tests
             var content = await response.Content.ReadAsStringAsync();
 
             // Assert
-            response.StatusCode.Should().Be(200);
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
             content.Should().Be("br");
             response.Content.Headers.TryGetValues("Content-Type", out IEnumerable<string> contentTypeValues);
             contentTypeValues.Single().Should().Be("text/html");
         }
 
         /// <summary>
-        /// Serve the compressed file if it exists and the browser supports it testing with a browser that only supports gzip
+        /// Serve the compressed file if it exists and the browser supports it testing with a browser that only supports gzip.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A task.</returns>
         [Fact]
         public async Task SupportsGzip()
         {
@@ -167,16 +166,16 @@ namespace CompressedStaticFiles.Tests
             var content = await response.Content.ReadAsStringAsync();
 
             // Assert
-            response.StatusCode.Should().Be(200);
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
             content.Should().Be("gzip");
             response.Content.Headers.TryGetValues("Content-Type", out IEnumerable<string> contentTypeValues);
             contentTypeValues.Single().Should().Be("text/html");
         }
 
         /// <summary>
-        /// Should send the uncompressed file if its smaller than the original
+        /// Should send the uncompressed file if its smaller than the original.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A task.</returns>
         [Fact]
         public async Task UncompressedSmaller()
         {
@@ -208,7 +207,7 @@ namespace CompressedStaticFiles.Tests
             var content = await response.Content.ReadAsStringAsync();
 
             // Assert
-            response.StatusCode.Should().Be(200);
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
             content.Should().Be("uncompressed");
             response.Content.Headers.TryGetValues("Content-Type", out IEnumerable<string> contentTypeValues);
             contentTypeValues.Single().Should().Be("text/html");
@@ -217,6 +216,7 @@ namespace CompressedStaticFiles.Tests
         /// <summary>
         /// Use the FileProvider from options.
         /// </summary>
+        /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
         [Fact]
         public async Task UseCustomFileProvider()
         {
@@ -225,7 +225,7 @@ namespace CompressedStaticFiles.Tests
             fileInfo.Exists.Returns(true);
             fileInfo.IsDirectory.Returns(false);
             fileInfo.Length.Returns(12);
-            fileInfo.LastModified.Returns(new DateTimeOffset(2018, 12, 16, 13, 36, 0, new TimeSpan()));
+            fileInfo.LastModified.Returns(new DateTimeOffset(2018, 12, 16, 13, 36, 0, default));
             fileInfo.CreateReadStream().Returns(new MemoryStream(Encoding.UTF8.GetBytes("fileprovider")));
 
             var mockFileProvider = Substitute.For<IFileProvider>();
@@ -260,7 +260,7 @@ namespace CompressedStaticFiles.Tests
             var content = await response.Content.ReadAsStringAsync();
 
             // Assert
-            response.StatusCode.Should().Be(200);
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
             content.Should().Be("fileprovider");
             response.Content.Headers.TryGetValues("Content-Type", out IEnumerable<string> contentTypeValues);
             contentTypeValues.Single().Should().Be("text/html");
@@ -269,7 +269,7 @@ namespace CompressedStaticFiles.Tests
         /// <summary>
         /// Should not send precompressed content if it has been disabled.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
         [Fact]
         public async Task Disabled()
         {
@@ -301,9 +301,8 @@ namespace CompressedStaticFiles.Tests
             var content = await response.Content.ReadAsStringAsync();
 
             // Assert
-            response.StatusCode.Should().Be(200);
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
             content.Should().Be("uncompressed");
         }
     }
 }
-
