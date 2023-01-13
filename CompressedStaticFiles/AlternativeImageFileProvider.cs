@@ -12,8 +12,8 @@ namespace CompressedStaticFiles
 {
     public class AlternativeImageFileProvider : IAlternativeFileProvider
     {
-        private static Dictionary<string, string[]> s_imageFormats =
-            new(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, string[]> s_imageFormats =
+            new (StringComparer.OrdinalIgnoreCase)
             {
                 { "image/avif", new[] { ".avif" } },
                 { "image/webp", new[] { ".webp" } },
@@ -31,8 +31,8 @@ namespace CompressedStaticFiles
 
         public AlternativeImageFileProvider(ILogger<AlternativeImageFileProvider> logger, IOptions<CompressedStaticFileOptions> options)
         {
-            this._logger = logger;
-            this._options = options;
+            _logger = logger;
+            _options = options;
         }
 
         public void Initialize(FileExtensionContentTypeProvider fileExtensionContentTypeProvider)

@@ -47,8 +47,8 @@ namespace CompressedStaticFiles
 
             logger = loggerFactory.CreateLogger<CompressedStaticFileMiddleware>();
 
-            this._staticFileOptions = staticFileOptions ?? throw new ArgumentNullException(nameof(staticFileOptions));
-            this._alternativeFileProviders = alternativeFileProviders;
+            _staticFileOptions = staticFileOptions ?? throw new ArgumentNullException(nameof(staticFileOptions));
+            _alternativeFileProviders = alternativeFileProviders;
             InitializeStaticFileOptions(hostingEnv, staticFileOptions);
 
             _base = new StaticFileMiddleware(next, hostingEnv, staticFileOptions, loggerFactory);
@@ -80,7 +80,7 @@ namespace CompressedStaticFiles
             staticFileOptions.Value.OnPrepareResponse = context =>
             {
                 originalPrepareResponse(context);
-                var alternativeFile = this._alternativeFile.Value;
+                var alternativeFile = _alternativeFile.Value;
                 if (alternativeFile != null)
                 {
                     alternativeFile.Prepare(contentTypeProvider, context);

@@ -15,9 +15,9 @@ namespace CompressedStaticFiles
 
         public CompressedAlternativeFile(ILogger logger, IFileInfo originalFile, IFileInfo alternativeFile)
         {
-            this._logger = logger;
-            this._originalFile = originalFile;
-            this._alternativeFile = alternativeFile;
+            _logger = logger;
+            _originalFile = originalFile;
+            _alternativeFile = alternativeFile;
         }
 
         public long Size => _alternativeFile.Length;

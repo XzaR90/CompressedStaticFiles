@@ -5,7 +5,7 @@ namespace CompressedStaticFiles
 {
     internal static class LoggerExtensions
     {
-        private static Action<ILogger, string, string, long, long, Exception> s_logFileServed = LoggerMessage.Define<string, string, long, long>(
+        private static readonly Action<ILogger, string, string, long, long, Exception> s_logFileServed = LoggerMessage.Define<string, string, long, long>(
                logLevel: LogLevel.Information,
                eventId: 1,
                formatString: "Sending file. Request file: '{RequestedPath}'. Served file: '{ServedPath}'. Original file size: {OriginalFileSize}. Served file size: {ServedFileSize}");

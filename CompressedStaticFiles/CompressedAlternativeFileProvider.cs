@@ -13,19 +13,19 @@ namespace CompressedStaticFiles
     public class CompressedAlternativeFileProvider : IAlternativeFileProvider
     {
         public static Dictionary<string, string> CompressionTypes { get; } =
-            new()
+            new ()
             {
                 { "gzip", ".gz" },
                 { "br", ".br" }
             };
 
-        private readonly ILogger logger;
-        private readonly IOptions<CompressedStaticFileOptions> options;
+        private readonly ILogger _logger;
+        private readonly IOptions<CompressedStaticFileOptions> _options;
 
         public CompressedAlternativeFileProvider(ILogger<CompressedAlternativeFileProvider> logger, IOptions<CompressedStaticFileOptions> options)
         {
-            this.logger = logger;
-            this.options = options;
+            _logger = logger;
+            _options = options;
         }
 
         public void Initialize(FileExtensionContentTypeProvider fileExtensionContentTypeProvider)
@@ -46,7 +46,7 @@ namespace CompressedStaticFiles
 
         public IFileAlternative GetAlternative(HttpContext context, IFileProvider fileSystem, IFileInfo originalFile)
         {
-            if (!options.Value.EnablePrecompressedFiles)
+            if (!_options.Value.EnablePrecompressedFiles)
             {
                 return null;
             }
@@ -66,7 +66,7 @@ namespace CompressedStaticFiles
             if (matchedFile != originalFile)
             {
                 // A compressed version exists and is smaller, change the path to serve the compressed file.
-                return new CompressedAlternativeFile(logger, originalFile, matchedFile);
+                return new CompressedAlternativeFile(_logger, originalFile, matchedFile);
             }
 
             return null;

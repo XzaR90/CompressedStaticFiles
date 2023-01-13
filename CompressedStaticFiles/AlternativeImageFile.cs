@@ -15,10 +15,10 @@ namespace CompressedStaticFiles
 
         public AlternativeImageFile(ILogger logger, IFileInfo originalFile, IFileInfo alternativeFile, float costRatio)
         {
-            this._logger = logger;
-            this._originalFile = originalFile;
-            this._alternativeFile = alternativeFile;
-            this._costRatio = costRatio;
+            _logger = logger;
+            _originalFile = originalFile;
+            _alternativeFile = alternativeFile;
+            _costRatio = costRatio;
         }
 
         public long Size => _alternativeFile.Length;
@@ -29,7 +29,7 @@ namespace CompressedStaticFiles
         {
             var path = context.Request.Path.Value;
             // Change file extension!
-            var pathAndFilenameWithoutExtension = path.Substring(0, path.LastIndexOf('.'));
+            var pathAndFilenameWithoutExtension = path[..path.LastIndexOf('.')];
             var matchedPath = pathAndFilenameWithoutExtension + Path.GetExtension(_alternativeFile.Name);
             _logger.LogFileServed(context.Request.Path.Value, matchedPath, _originalFile.Length, _alternativeFile.Length);
             // Redirect the static file system to the alternative file
