@@ -94,7 +94,7 @@ namespace CompressedStaticFiles
                 return null;
             }
 
-            var withoutExtension = path.Substring(0, path.LastIndexOf('.'));
+            var withoutExtension = path[..path.LastIndexOf('.')];
             foreach (var fileExtension in matchingFileExtensions)
             {
                 var file = fileSystem.GetFileInfo(withoutExtension + fileExtension);

@@ -14,7 +14,7 @@ namespace CompressedStaticFiles
 {
     public class CompressedStaticFileMiddleware
     {
-        private readonly AsyncLocal<IFileAlternative> _alternativeFile = new AsyncLocal<IFileAlternative>();
+        private readonly AsyncLocal<IFileAlternative> _alternativeFile = new();
         private readonly IOptions<StaticFileOptions> _staticFileOptions;
         private readonly IEnumerable<IAlternativeFileProvider> _alternativeFileProviders;
         private readonly StaticFileMiddleware _base;
@@ -81,14 +81,11 @@ namespace CompressedStaticFiles
             {
                 originalPrepareResponse(context);
                 var alternativeFile = _alternativeFile.Value;
-                if (alternativeFile != null)
-                {
-                    alternativeFile.Prepare(contentTypeProvider, context);
-                }
+                alternativeFile?.Prepare(contentTypeProvider, context);
             };
         }
 
-        public Task Invoke(HttpContext context)
+        public Task InvokeAsync(HttpContext context)
         {
             if (context.Request.Path.HasValue)
             {

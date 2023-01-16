@@ -13,7 +13,7 @@ namespace CompressedStaticFiles
     public class CompressedAlternativeFileProvider : IAlternativeFileProvider
     {
         public static Dictionary<string, string> CompressionTypes { get; } =
-            new ()
+            new()
             {
                 { "gzip", ".gz" },
                 { "br", ".br" }
